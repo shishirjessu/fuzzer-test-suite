@@ -23,6 +23,13 @@
 
 #include <turbojpeg.h>
 
+__attribute__((used))
+__attribute__((optnone))
+extern "C" void __trace(uintptr_t addr) {
+    // printf("%d\n", addr);
+}
+
+
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     tjhandle jpegDecompressor = tjInitDecompress();

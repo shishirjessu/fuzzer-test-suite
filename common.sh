@@ -6,7 +6,7 @@
 [ -e $(basename $0) ] && echo "PLEASE USE THIS SCRIPT FROM ANOTHER DIR" && exit 1
 
 # Ensure that fuzzing engine, if defined, is valid
-FUZZING_ENGINE=${FUZZING_ENGINE:-"fsanitize_fuzzer"}
+FUZZING_ENGINE=${FUZZING_ENGINE:-"libfuzzer"}
 POSSIBLE_FUZZING_ENGINE="libfuzzer afl honggfuzz coverage fsanitize_fuzzer hooks"
 !(echo "$POSSIBLE_FUZZING_ENGINE" | grep -w "$FUZZING_ENGINE" > /dev/null) && \
   echo "USAGE: Error: If defined, FUZZING_ENGINE should be one of the following:
@@ -19,18 +19,21 @@ STANDALONE_TARGET=0
 AFL_SRC=${AFL_SRC:-$(dirname $(dirname $SCRIPT_DIR))/AFL}
 HONGGFUZZ_SRC=${HONGGFUZZ_SRC:-$(dirname $(dirname $SCRIPT_DIR))/honggfuzz}
 COVERAGE_FLAGS="-O0 -fsanitize-coverage=trace-pc-guard"
-FUZZ_CXXFLAGS="-O2 -fno-omit-frame-pointer -gline-tables-only -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-coverage=trace-pc-guard,trace-cmp,trace-gep,trace-div"
+# TEST_CXXFLAGS="-O0 -flto -fsanitize=cfi-icall -g -fuse-ld=/home/sjessu/summer/reldeb/ld.lld"
+TEST_CXXFLAGS="-O3 -flto -fsanitize=cfi-icall -g -fuse-ld=/home/sjessu/summer/reldeb/ld.lld"
+FUZZ_CXXFLAGS="-O3 -fno-omit-frame-pointer -g -fsanitize-coverage=trace-pc-guard,indirect-calls"
+LTO_CXXFLAGS="-O0 -g -flto -fsanitize=cfi-icall -fuse-ld=/home/sjessu/build-no-debug/ld.lld -lowertypetests-cfg-summary=/home/sjessu/temp/fuzzer-test-suite/libjpeg_cfg.txt"
 CORPUS=CORPUS-$EXECUTABLE_NAME_BASE
 JOBS=${JOBS:-"8"}
 
 
-export CC=${CC:-"clang"}
-export CXX=${CXX:-"clang++"}
+export CC=${CC:-"/home/sjessu/summer/reldeb/bin/clang"}
+export CXX=${CXX:-"/home/sjessu/summer/reldeb/bin/clang++"}
 export CPPFLAGS=${CPPFLAGS:-"-DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION"}
 export LIB_FUZZING_ENGINE="libFuzzingEngine-${FUZZING_ENGINE}.a"
 
 if [[ $FUZZING_ENGINE == "fsanitize_fuzzer" ]]; then
-  FSANITIZE_FUZZER_FLAGS="-O2 -fno-omit-frame-pointer -gline-tables-only -fsanitize=address,fuzzer-no-link -fsanitize-address-use-after-scope"
+  FSANITIZE_FUZZER_FLAGS="-O2 -flto -fno-omit-frame-pointer -g -fsanitize=address,fuzzer-no-link -fsanitize-address-use-after-scope -fsanitize-coverage=no-prune,indirect-calls"
   export CFLAGS=${CFLAGS:-$FSANITIZE_FUZZER_FLAGS}
   export CXXFLAGS=${CXXFLAGS:-$FSANITIZE_FUZZER_FLAGS}
 elif [[ $FUZZING_ENGINE == "honggfuzz" ]]; then
@@ -40,8 +43,8 @@ elif [[ $FUZZING_ENGINE == "coverage" ]]; then
   export CFLAGS=${CFLAGS:-$COVERAGE_FLAGS}
   export CXXFLAGS=${CXXFLAGS:-$COVERAGE_FLAGS}
 else
-  export CFLAGS=${CFLAGS:-"$FUZZ_CXXFLAGS"}
-  export CXXFLAGS=${CXXFLAGS:-"$FUZZ_CXXFLAGS"}
+  export CFLAGS=${CFLAGS:-"$TEST_CXXFLAGS"}
+  export CXXFLAGS=${CXXFLAGS:-"$TEST_CXXFLAGS"}
 fi
 
 get_git_revision() {

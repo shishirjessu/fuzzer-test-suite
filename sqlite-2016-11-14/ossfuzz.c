@@ -11,6 +11,12 @@
 #include <stdint.h>
 #include "sqlite3.h"
 
+__attribute__((used))
+__attribute__((optnone))
+void __trace(uintptr_t addr) {
+	printf("%d\n", addr);
+}
+
 /*
 ** Progress handler callback
 */

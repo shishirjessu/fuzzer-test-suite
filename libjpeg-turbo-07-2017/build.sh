@@ -12,6 +12,20 @@ build_lib() {
 
 get_git_revision https://github.com/libjpeg-turbo/libjpeg-turbo.git b0971e47d76fdb81270e93bbf11ff5558073350d SRC
 build_lib
+
+
+cd BUILD/.libs 
+ar x libjpeg.a
+/home/sjessu/summer/reldeb/bin/llvm-ar --format=default -r libjpeg.a *.o 
+ar x libturbojpeg.a 
+/home/sjessu/summer/reldeb/bin/llvm-ar --format=default -r libturbojpeg.a *.o
+rm *.o
+
+cd .. 
+make -j32 
+
+cd ..  
+
 build_fuzzer
 
 if [[ $FUZZING_ENGINE == "hooks" ]]; then
@@ -19,4 +33,4 @@ if [[ $FUZZING_ENGINE == "hooks" ]]; then
   LIB_FUZZING_ENGINE="$LIB_FUZZING_ENGINE -fsanitize=address"
 fi
 set -x
-$CXX $CXXFLAGS -std=c++11 $SCRIPT_DIR/libjpeg_turbo_fuzzer.cc -I BUILD BUILD/.libs/libturbojpeg.a $LIB_FUZZING_ENGINE -o $EXECUTABLE_NAME_BASE
+$CXX $CXXFLAGS -std=c++11 $SCRIPT_DIR/libjpeg_turbo_fuzzer.cc -I BUILD BUILD/.libs/libturbojpeg.a $LIB_FUZZING_ENGINE -o $EXECUTABLE_NAME_BASE -lpthread
